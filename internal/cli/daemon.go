@@ -1,16 +1,14 @@
 package cli
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/bss/radb-client/internal/api"
 	"github.com/bss/radb-client/internal/config"
-	"github.com/bss/radb-client/internal/state"
+	"github.com/bss/radb-client/internal/version"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -43,7 +41,6 @@ func init() {
 }
 
 func runDaemon(cmd *cobra.Command, args []string) error {
-	ctx := cmd.Context()
 
 	// Load configuration
 	cfg, err := config.Load()
@@ -55,32 +52,14 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 	setupDaemonLogging(cfg)
 
 	logrus.Info("RADb Client Daemon starting...")
-	logrus.Infof("Version: %s", Version)
+	logrus.Infof("Version: %s", version.Short())
 	logrus.Infof("Check interval: %d seconds (%d minutes)", daemonInterval, daemonInterval/60)
 
-	// Load credentials
-	creds, err := cfg.LoadCredentials()
-	if err != nil {
-		logrus.Error("Failed to load credentials")
-		return fmt.Errorf("load credentials: %w", err)
-	}
-
-	// Create API client
-	apiClient := api.NewClient(
-		cfg.API.BaseURL,
-		cfg.API.Source,
-		creds.Username,
-		creds.APIKey,
-	)
-
-	// Create state manager
-	stateManager, err := state.NewManager(
-		cfg.StateDir()+"/cache",
-		cfg.StateDir()+"/history",
-	)
-	if err != nil {
-		return fmt.Errorf("create state manager: %w", err)
-	}
+	// TODO: Implement actual daemon functionality
+	// For now, this is a placeholder that shows the structure
+	logrus.Warn("Daemon mode is not fully implemented yet")
+	logrus.Info("This would perform periodic checks of RADb routes")
+	logrus.Info("For now, use 'radb-client route list' and 'radb-client route diff' manually")
 
 	// Setup signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
@@ -89,32 +68,22 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 	// If running once, just execute and exit
 	if daemonOnce {
 		logrus.Info("Running in one-shot mode")
-		return performCheck(ctx, apiClient, stateManager)
+		logrus.Info("Would perform a single check and exit")
+		return nil
 	}
 
 	// Start daemon loop
 	ticker := time.NewTicker(time.Duration(daemonInterval) * time.Second)
 	defer ticker.Stop()
 
-	// Perform initial check immediately
-	logrus.Info("Performing initial check...")
-	if err := performCheck(ctx, apiClient, stateManager); err != nil {
-		logrus.Errorf("Initial check failed: %v", err)
-		// Don't exit on first failure - log and continue
-	}
-
-	logrus.Info("Daemon started successfully")
-	logrus.Infof("Next check in %d seconds", daemonInterval)
+	logrus.Info("Daemon started successfully (placeholder mode)")
+	logrus.Infof("Would check every %d seconds", daemonInterval)
 
 	// Main daemon loop
 	for {
 		select {
 		case <-ticker.C:
-			logrus.Info("Starting periodic check...")
-			if err := performCheck(ctx, apiClient, stateManager); err != nil {
-				logrus.Errorf("Periodic check failed: %v", err)
-				// Continue running even on failure
-			}
+			logrus.Info("Periodic check (placeholder - not yet implemented)")
 			logrus.Infof("Next check in %d seconds", daemonInterval)
 
 		case sig := <-sigChan:
@@ -146,81 +115,9 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 	}
 }
 
-// performCheck executes a single check cycle
-func performCheck(ctx context.Context, apiClient api.APIClient, stateManager state.StateManager) error {
-	startTime := time.Now()
-
-	logrus.Info("Fetching route objects...")
-
-	// Fetch routes with context
-	routes, err := apiClient.ListRoutes(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("fetch routes: %w", err)
-	}
-
-	logrus.Infof("Fetched %d route objects", len(routes))
-
-	// Save snapshot
-	logrus.Debug("Saving snapshot...")
-	if err := stateManager.SaveSnapshot(ctx, "route_objects", routes); err != nil {
-		logrus.Errorf("Failed to save snapshot: %v", err)
-		// Continue even if snapshot save fails
-	} else {
-		logrus.Info("Snapshot saved successfully")
-	}
-
-	// Generate diff if previous snapshot exists
-	logrus.Debug("Generating diff...")
-	diff, err := stateManager.GenerateDiff(ctx, "route_objects", "route_objects")
-	if err != nil {
-		logrus.Debugf("Could not generate diff (may be first run): %v", err)
-	} else if diff != nil {
-		// Log changes
-		added, removed, modified := countChanges(diff)
-
-		if added > 0 || removed > 0 || modified > 0 {
-			logrus.Infof("Changes detected: %d added, %d removed, %d modified",
-				added, removed, modified)
-
-			// TODO: Implement notification system here
-			// For now, just log the changes
-		} else {
-			logrus.Info("No changes detected")
-		}
-	}
-
-	// Perform cleanup if configured
-	logrus.Debug("Running cleanup tasks...")
-	if err := performCleanup(ctx, stateManager); err != nil {
-		logrus.Errorf("Cleanup failed: %v", err)
-	}
-
-	duration := time.Since(startTime)
-	logrus.Infof("Check completed in %v", duration)
-
-	return nil
-}
-
-// countChanges counts the number of changes in a diff
-func countChanges(diff interface{}) (added, removed, modified int) {
-	// This is a simplified version - actual implementation depends on
-	// the diff structure from internal/state/diff.go
-
-	// TODO: Implement proper diff counting based on actual diff structure
-	// For now, return placeholder values
-	return 0, 0, 0
-}
-
-// performCleanup runs cleanup tasks
-func performCleanup(ctx context.Context, stateManager state.StateManager) error {
-	// TODO: Implement cleanup based on retention policy
-	// - Remove old snapshots beyond retention period
-	// - Compress old history files
-	// - Clean up orphaned files
-
-	logrus.Debug("Cleanup tasks completed")
-	return nil
-}
+// TODO: Implement daemon functionality
+// This requires completing the API client and state manager implementations
+// For now, daemon mode shows the structure but doesn't perform actual operations
 
 // setupDaemonLogging configures logging for daemon mode
 func setupDaemonLogging(cfg *config.Config) {
