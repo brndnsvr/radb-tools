@@ -9,12 +9,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/nacl/secretbox"
-	"golang.org/x/term"
 )
 
 const (
@@ -281,53 +279,25 @@ func (f *FileFallback) deriveKey(password string, salt []byte) []byte {
 	)
 }
 
-// getPassword prompts for and caches the encryption password.
+// getPassword gets the encryption password.
+// We use a fixed, machine-specific password derived from the hostname and config dir.
+// This provides encryption at rest without requiring users to manage another password.
 func (f *FileFallback) getPassword() (string, error) {
 	// Return cached password if available
 	if f.password != "" {
 		return f.password, nil
 	}
 
-	// Check if credential file exists
-	_, err := os.Stat(f.path)
-	fileExists := !os.IsNotExist(err)
-
-	// Prompt for password
-	var password string
-	if fileExists {
-		fmt.Print("Enter credential store password: ")
-		passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
-		fmt.Println()
-		if err != nil {
-			return "", fmt.Errorf("failed to read password: %w", err)
-		}
-		password = string(passwordBytes)
-	} else {
-		// New credential file - prompt twice
-		fmt.Print("Create credential store password: ")
-		password1, err := term.ReadPassword(int(syscall.Stdin))
-		fmt.Println()
-		if err != nil {
-			return "", fmt.Errorf("failed to read password: %w", err)
-		}
-
-		fmt.Print("Confirm password: ")
-		password2, err := term.ReadPassword(int(syscall.Stdin))
-		fmt.Println()
-		if err != nil {
-			return "", fmt.Errorf("failed to read password: %w", err)
-		}
-
-		if string(password1) != string(password2) {
-			return "", errors.New("passwords do not match")
-		}
-
-		password = string(password1)
+	// Generate a machine-specific password
+	// This isn't as secure as a user-provided password, but it's much better UX
+	// and still provides encryption at rest against casual file access
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "localhost"
 	}
 
-	if password == "" {
-		return "", errors.New("password cannot be empty")
-	}
+	// Create a deterministic password based on hostname and config path
+	password := fmt.Sprintf("radb-client-%s-%s", hostname, filepath.Dir(f.path))
 
 	// Cache the password
 	f.password = password
