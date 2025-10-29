@@ -1,20 +1,17 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"github.com/bss/radb-client/internal/version"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
-const (
-	// Version is the current version of the application
-	Version = "0.9.0-pre"
-
-	// BuildDate is set during build
-	BuildDate = "development"
-
-	// GitCommit is set during build
-	GitCommit = "dev"
+var (
+	versionShort  bool
+	versionFormat string
 )
 
 var versionCmd = &cobra.Command{
@@ -22,10 +19,35 @@ var versionCmd = &cobra.Command{
 	Short: "Show version information",
 	Long:  "Display version, build date, and git commit information.",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("radb-client version %s\n", Version)
-		fmt.Printf("Build date: %s\n", BuildDate)
-		fmt.Printf("Git commit: %s\n", GitCommit)
-		fmt.Println("\n🧪 Pre-release build - pending final manual testing")
-		fmt.Println("\nSee TESTING_RUNBOOK.md for complete testing procedures")
+		// Short version flag
+		if versionShort {
+			fmt.Println(version.Short())
+			return
+		}
+
+		// Handle different output formats
+		switch versionFormat {
+		case "json":
+			data, _ := json.MarshalIndent(version.Get(), "", "  ")
+			fmt.Println(string(data))
+
+		case "yaml":
+			data, _ := yaml.Marshal(version.Get())
+			fmt.Print(string(data))
+
+		default: // text format
+			fmt.Println(version.Full())
+
+			// Show pre-release warning if applicable
+			if version.IsPreRelease() {
+				fmt.Println("\n🧪 Pre-release build - pending final manual testing")
+				fmt.Println("\nSee TESTING_RUNBOOK.md for complete testing procedures")
+			}
+		}
 	},
+}
+
+func init() {
+	versionCmd.Flags().BoolVarP(&versionShort, "short", "s", false, "Show only version number")
+	versionCmd.Flags().StringVarP(&versionFormat, "output", "o", "text", "Output format (text, json, yaml)")
 }

@@ -1,13 +1,32 @@
 #!/bin/bash
-# Build RADb client for multiple platforms
+# Build RADb client for multiple platforms with version injection
 
 set -e
 
-VERSION="${VERSION:-dev}"
-OUTPUT_DIR="${OUTPUT_DIR:-./bin}"
+# Read version from VERSION file if not set
+if [ -z "$VERSION" ]; then
+    if [ -f VERSION ]; then
+        VERSION=$(cat VERSION)
+    else
+        VERSION="dev"
+    fi
+fi
+
+OUTPUT_DIR="${OUTPUT_DIR:-./dist}"
 
 echo "Building RADb client v${VERSION}..."
 echo "===================================="
+
+# Get git information
+GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+BUILD_DATE=$(date -u '+%Y-%m-%d_%H:%M:%S_UTC')
+
+echo "Version:     $VERSION"
+echo "Git Commit:  $GIT_COMMIT"
+echo "Git Branch:  $GIT_BRANCH"
+echo "Build Date:  $BUILD_DATE"
+echo ""
 
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
@@ -21,6 +40,13 @@ PLATFORMS=(
     "windows/amd64"
 )
 
+# Build flags with version information
+LDFLAGS="-s -w"
+LDFLAGS="$LDFLAGS -X 'github.com/bss/radb-client/internal/version.Version=$VERSION'"
+LDFLAGS="$LDFLAGS -X 'github.com/bss/radb-client/internal/version.GitCommit=$GIT_COMMIT'"
+LDFLAGS="$LDFLAGS -X 'github.com/bss/radb-client/internal/version.GitBranch=$GIT_BRANCH'"
+LDFLAGS="$LDFLAGS -X 'github.com/bss/radb-client/internal/version.BuildDate=$BUILD_DATE'"
+
 for platform in "${PLATFORMS[@]}"; do
     IFS='/' read -r -a parts <<< "$platform"
     GOOS="${parts[0]}"
@@ -31,15 +57,14 @@ for platform in "${PLATFORMS[@]}"; do
         output_name="${output_name}.exe"
     fi
 
-    echo ""
     echo "Building for ${GOOS}/${GOARCH}..."
 
     GOOS=$GOOS GOARCH=$GOARCH go build \
-        -ldflags "-s -w -X main.version=${VERSION}" \
+        -ldflags "$LDFLAGS" \
         -o "${OUTPUT_DIR}/${output_name}" \
         ./cmd/radb-client
 
-    echo "Created: ${OUTPUT_DIR}/${output_name}"
+    echo "  Created: ${OUTPUT_DIR}/${output_name}"
 done
 
 # Generate checksums

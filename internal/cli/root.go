@@ -8,6 +8,7 @@ import (
 	"github.com/bss/radb-client/internal/api"
 	"github.com/bss/radb-client/internal/config"
 	"github.com/bss/radb-client/internal/state"
+	"github.com/bss/radb-client/internal/version"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -25,10 +26,11 @@ var (
 	ctx CLIContext
 
 	rootCmd = &cobra.Command{
-		Use:   "radb-client",
-		Short: "RADb API client for route and contact management",
-		Long: `A command-line client for interacting with the RADb (Routing Assets Database) API.
+		Use:     "radb-client",
+		Short:   "RADb API client for route and contact management",
+		Long:    `A command-line client for interacting with the RADb (Routing Assets Database) API.
 Manage route objects, contacts, and track changes over time.`,
+		Version: version.Short(),
 		PersistentPreRunE: initializeContext,
 		SilenceUsage:      true,
 		SilenceErrors:     true,
