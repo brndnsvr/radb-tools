@@ -24,15 +24,42 @@ A command-line client for managing RADb (Routing Assets Database) resources prog
 
 ## Installation
 
-### From Source
+### Quick Install (Recommended)
 
 ```bash
-go build -o radb-client ./cmd/radb-client
+# Clone repository
+git clone https://github.com/brndnsvr/radb-tools.git
+cd radb-tools
+
+# Run interactive installer
+./scripts/install-interactive.sh
+```
+
+The interactive installer will:
+- ✅ Check prerequisites
+- ✅ Build the binary
+- ✅ Offer installation locations
+- ✅ Initialize configuration (optional)
+- ✅ Set up credentials (optional)
+- ✅ Install daemon service (optional, Linux only)
+
+### Manual Installation
+
+```bash
+# Build from source
+go mod download
+go build -o bin/radb-client ./cmd/radb-client
+
+# Install (choose one)
+cp bin/radb-client $HOME/bin/           # User install
+sudo cp bin/radb-client /usr/local/bin/ # System install
 ```
 
 ### Binary Release
 
-Download the latest release for your platform from the releases page.
+Download pre-built binaries from the [releases page](https://github.com/brndnsvr/radb-tools/releases).
+
+See [INSTALL.md](INSTALL.md) for detailed installation instructions.
 
 ## Quick Start
 
