@@ -63,6 +63,9 @@ func init() {
 	// Phase 3 commands
 	rootCmd.AddCommand(NewHistoryCmd(logger))
 	rootCmd.AddCommand(NewSearchCmd(logger))
+
+	// Daemon mode
+	rootCmd.AddCommand(daemonCmd)
 }
 
 // initializeContext initializes the CLI context before command execution.
