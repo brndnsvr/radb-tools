@@ -77,6 +77,13 @@ func (f *FileFallback) Set(user, key, value string) error {
 		return fmt.Errorf("failed to load existing credentials: %w", err)
 	}
 
+	// Initialize if file doesn't exist or creds is nil
+	if creds == nil {
+		creds = &credentialData{
+			Credentials: make(map[string]map[string]string),
+		}
+	}
+
 	// Initialize if needed
 	if creds.Credentials == nil {
 		creds.Credentials = make(map[string]map[string]string)
