@@ -1,522 +1,553 @@
-# Installation Guide
+# RADb Client - Installation Guide
 
-Complete installation instructions for the RADb API Client on all supported platforms.
+Complete installation guide for radb-client, covering all installation methods and configurations.
 
 ## Table of Contents
 
-- [Quick Installation](#quick-installation)
-- [Platform-Specific Instructions](#platform-specific-instructions)
-  - [Linux](#linux)
-  - [macOS](#macos)
-  - [Windows](#windows)
-- [Installation from Source](#installation-from-source)
-- [Container Installation](#container-installation)
-- [Post-Installation](#post-installation)
-- [Upgrading](#upgrading)
-- [Uninstallation](#uninstallation)
+- [Quick Start](#quick-start)
+- [Prerequisites](#prerequisites)
+- [Interactive Installation (Recommended)](#interactive-installation-recommended)
+- [Manual Installation](#manual-installation)
+- [Configuration](#configuration)
+- [Authentication](#authentication)
+- [Daemon Installation](#daemon-installation)
+- [Verification](#verification)
 - [Troubleshooting](#troubleshooting)
+- [Uninstallation](#uninstallation)
 
-## Quick Installation
+---
 
-### Binary Download (Recommended)
+## Quick Start
 
-Download the latest release for your platform:
+For the fastest installation experience:
 
 ```bash
-# Linux (amd64)
-curl -L https://github.com/example/radb-client/releases/latest/download/radb-client-linux-amd64 -o radb-client
-chmod +x radb-client
-sudo mv radb-client /usr/local/bin/
+# Clone the repository
+git clone https://github.com/brndnsvr/radb-tools.git
+cd radb-tools
 
-# macOS (Intel)
-curl -L https://github.com/example/radb-client/releases/latest/download/radb-client-darwin-amd64 -o radb-client
-chmod +x radb-client
-sudo mv radb-client /usr/local/bin/
-
-# macOS (Apple Silicon)
-curl -L https://github.com/example/radb-client/releases/latest/download/radb-client-darwin-arm64 -o radb-client
-chmod +x radb-client
-sudo mv radb-client /usr/local/bin/
-
-# Windows (PowerShell)
-Invoke-WebRequest -Uri "https://github.com/example/radb-client/releases/latest/download/radb-client-windows-amd64.exe" -OutFile "radb-client.exe"
-# Move to a directory in your PATH
+# Run interactive installer
+./scripts/install-interactive.sh
 ```
 
-### Verify Installation
+The interactive installer will guide you through the complete setup process.
+
+---
+
+## Prerequisites
+
+### Required
+
+- **Go 1.23 or higher**
+  - Check: `go version`
+  - Install: https://golang.org/doc/install
+
+### Optional
+
+- **Git** - For version information in builds
+- **Sudo access** - Only for system-wide installation or daemon mode
+
+### Platform Support
+
+- ✅ Linux (amd64, arm64)
+- ✅ macOS (Intel, Apple Silicon)
+- ✅ Windows (amd64) - Limited testing
+
+---
+
+## Interactive Installation (Recommended)
+
+The interactive installer provides a guided experience:
 
 ```bash
-radb-client --version
-# Output: radb-client version 1.0.0
+./scripts/install-interactive.sh
 ```
 
-## Platform-Specific Instructions
+### Installation Options
 
-### Linux
+1. **User Installation** (`$HOME/bin`)
+   - No sudo required
+   - User-specific installation
+   - May need to add to PATH
 
-#### Option 1: Binary Installation (Recommended)
+2. **System Installation** (`/usr/local/bin`)
+   - Requires sudo
+   - Available to all users
+   - Usually in PATH by default
 
-**For most users (amd64):**
+3. **Custom Location**
+   - Specify your own directory
+   - Flexibility for specific setups
+
+4. **Build Only**
+   - Just compile the binary
+   - No installation step
+   - Binary in `bin/radb-client`
+
+### Example: Complete Setup
 
 ```bash
-# Download
-curl -L https://github.com/example/radb-client/releases/latest/download/radb-client-linux-amd64 -o radb-client
+# Run interactive installer
+./scripts/install-interactive.sh
 
-# Make executable
-chmod +x radb-client
-
-# Install system-wide
-sudo mv radb-client /usr/local/bin/
-
-# Verify
-radb-client --version
+# Example responses for full setup:
+# 1. Installation type: 1 (User installation)
+# 2. Initialize config: y
+# 3. Setup credentials: y
+#    - Enter username: your-radb-username
+#    - Enter password: your-radb-password
+# 4. Install daemon: y (Linux only)
+#    - Configure daemon credentials: y
 ```
 
-**For ARM64 systems:**
+### What the Installer Does
+
+✅ Checks prerequisites (Go version, etc.)
+✅ Downloads Go module dependencies
+✅ Builds binary with version information
+✅ Installs to your chosen location
+✅ Checks if location is in PATH
+✅ Offers to initialize configuration
+✅ Offers to set up credentials
+✅ (Linux) Offers to install systemd daemon
+✅ Displays next steps
+
+---
+
+## Manual Installation
+
+If you prefer manual control:
+
+### Step 1: Download Dependencies
 
 ```bash
-curl -L https://github.com/example/radb-client/releases/latest/download/radb-client-linux-arm64 -o radb-client
-chmod +x radb-client
-sudo mv radb-client /usr/local/bin/
+go mod download
 ```
 
-#### Option 2: Package Manager (Future)
-
-**Note:** Package manager support is planned for future releases.
+### Step 2: Build Binary
 
 ```bash
-# Ubuntu/Debian (Future)
-# sudo apt install radb-client
+# Simple build
+go build -o bin/radb-client ./cmd/radb-client
 
-# CentOS/RHEL (Future)
-# sudo yum install radb-client
+# Build with version information (recommended)
+VERSION=$(cat VERSION)
+GIT_COMMIT=$(git rev-parse --short HEAD)
+GIT_BRANCH=$(git branch --show-current)
+BUILD_DATE=$(date -u '+%Y-%m-%d_%H:%M:%S_UTC')
 
-# Arch Linux (Future)
-# yay -S radb-client
+LDFLAGS="-s -w"
+LDFLAGS="$LDFLAGS -X 'github.com/bss/radb-client/internal/version.Version=$VERSION'"
+LDFLAGS="$LDFLAGS -X 'github.com/bss/radb-client/internal/version.GitCommit=$GIT_COMMIT'"
+LDFLAGS="$LDFLAGS -X 'github.com/bss/radb-client/internal/version.GitBranch=$GIT_BRANCH'"
+LDFLAGS="$LDFLAGS -X 'github.com/bss/radb-client/internal/version.BuildDate=$BUILD_DATE'"
+
+go build -ldflags "$LDFLAGS" -o bin/radb-client ./cmd/radb-client
 ```
 
-#### Option 3: From Source
+### Step 3: Install Binary
 
-See [Installation from Source](#installation-from-source) section.
-
-#### Post-Installation on Linux
-
-**Install keyring support (optional but recommended):**
-
+**User Installation:**
 ```bash
-# GNOME Desktop
-sudo apt install gnome-keyring
+mkdir -p $HOME/bin
+cp bin/radb-client $HOME/bin/
+chmod +x $HOME/bin/radb-client
 
-# KDE Plasma
-sudo apt install kwalletmanager
-
-# For headless servers, encrypted file fallback is used automatically
+# Add to PATH if needed
+echo 'export PATH="$PATH:$HOME/bin"' >> ~/.bashrc
+source ~/.bashrc
 ```
 
-**Verify keyring is working:**
+**System Installation:**
+```bash
+sudo cp bin/radb-client /usr/local/bin/
+sudo chmod +x /usr/local/bin/radb-client
+```
+
+### Step 4: Initialize Configuration
 
 ```bash
-# Should show keyring info or indicate fallback
+radb-client config init
+```
+
+### Step 5: Authenticate
+
+```bash
+radb-client auth login
+```
+
+---
+
+## Configuration
+
+### Initialize Configuration
+
+Create default configuration:
+
+```bash
+radb-client config init
+```
+
+This creates:
+- `~/.radb-client/config.yaml` - Configuration file
+- `~/.radb-client/cache/` - Cache directory
+- `~/.radb-client/history/` - History/snapshot directory
+
+### View Configuration
+
+```bash
+# Show full configuration
+radb-client config show
+
+# Show specific format
+radb-client config show --format yaml
+```
+
+### Configuration File Location
+
+Default: `~/.radb-client/config.yaml`
+
+Override with:
+```bash
+radb-client --config /path/to/config.yaml <command>
+```
+
+### Configuration Options
+
+Edit `~/.radb-client/config.yaml`:
+
+```yaml
+api:
+  baseurl: https://api.radb.net
+  source: RADB
+  format: json
+  timeout: 30
+  ratelimit:
+    requestsperminute: 60
+    burstsize: 10
+  retry:
+    maxattempts: 3
+    backoffmultiplier: 2
+    initialdelayms: 1000
+
+credentials:
+  username: "your-username"  # Set via 'auth login'
+
+performance:
+  streamthreshold: 1000
+  compresshistory: true
+  maxconcurrentrequests: 5
+
+preferences:
+  cachedir: /home/user/.radb-client/cache
+  historydir: /home/user/.radb-client/history
+  loglevel: INFO  # DEBUG, INFO, WARN, ERROR
+
+state:
+  enablelocking: true
+  atomicwrites: true
+  formatversion: "1.0"
+```
+
+---
+
+## Authentication
+
+### Login
+
+Store credentials securely:
+
+```bash
+radb-client auth login
+```
+
+You'll be prompted for:
+- Username: Your RADb account username
+- Password: Your RADb account password (hidden input)
+
+**Security:**
+- Password encrypted with Argon2id + NaCl secretbox
+- Stored in system keyring if available
+- Falls back to encrypted file storage
+
+### Logout
+
+Remove stored credentials:
+
+```bash
+radb-client auth logout
+```
+
+### Check Status
+
+Verify authentication status:
+
+```bash
 radb-client auth status
 ```
 
 ---
 
-### macOS
+## Daemon Installation
 
-#### Option 1: Binary Installation (Recommended)
+**(Linux only - Ubuntu 22.04 LTS and newer)**
 
-**For Intel Macs:**
+Install radb-client as a systemd service for continuous monitoring:
 
-```bash
-# Download
-curl -L https://github.com/example/radb-client/releases/latest/download/radb-client-darwin-amd64 -o radb-client
+### Interactive Daemon Setup
 
-# Make executable
-chmod +x radb-client
+During interactive installation, choose "Yes" when prompted for daemon installation.
 
-# Remove quarantine attribute (required on macOS)
-xattr -d com.apple.quarantine radb-client
-
-# Install
-sudo mv radb-client /usr/local/bin/
-
-# Verify
-radb-client --version
-```
-
-**For Apple Silicon (M1/M2/M3) Macs:**
+### Manual Daemon Installation
 
 ```bash
-curl -L https://github.com/example/radb-client/releases/latest/download/radb-client-darwin-arm64 -o radb-client
-chmod +x radb-client
-xattr -d com.apple.quarantine radb-client
-sudo mv radb-client /usr/local/bin/
+# Run daemon installer
+sudo ./scripts/install-daemon.sh
+
+# With credentials
+sudo RADB_USERNAME="your-username" RADB_PASSWORD="your-password" \
+  ./scripts/install-daemon.sh
 ```
 
-#### Option 2: Homebrew (Future)
-
-**Note:** Homebrew formula is planned for future releases.
+### Daemon Management
 
 ```bash
-# Future
-# brew install radb-client
+# Start daemon
+sudo systemctl start radb-daemon
+
+# Stop daemon
+sudo systemctl stop radb-daemon
+
+# Restart daemon
+sudo systemctl restart radb-daemon
+
+# Enable on boot
+sudo systemctl enable radb-daemon
+
+# View status
+sudo systemctl status radb-daemon
+
+# View logs
+sudo journalctl -u radb-daemon -f
 ```
 
-#### Option 3: From Source
+### Daemon Management Helper
 
-See [Installation from Source](#installation-from-source) section.
+A helper script is installed at `/usr/local/bin/radb-daemon`:
 
-#### macOS Security Note
+```bash
+# Start daemon
+radb-daemon start
 
-On first run, macOS may warn about unverified developer:
+# Stop daemon
+radb-daemon stop
 
-1. **If binary won't run:**
-   ```bash
-   xattr -d com.apple.quarantine /usr/local/bin/radb-client
-   ```
+# Restart daemon
+radb-daemon restart
 
-2. **Or manually approve:**
-   - System Preferences → Security & Privacy
-   - Click "Allow Anyway" for radb-client
+# View status
+radb-daemon status
 
-#### Keychain Access
+# View logs
+radb-daemon logs
 
-The client uses macOS Keychain automatically. No additional setup required.
+# Follow logs
+radb-daemon tail
+```
+
+**Note:** Daemon mode is currently a placeholder. Full implementation requires completion of API client and state manager.
+
+See `docs/DAEMON_DEPLOYMENT.md` for detailed daemon documentation.
 
 ---
 
-### Windows
+## Verification
 
-#### Option 1: Binary Installation
-
-**Using PowerShell (Recommended):**
-
-```powershell
-# Download
-Invoke-WebRequest -Uri "https://github.com/example/radb-client/releases/latest/download/radb-client-windows-amd64.exe" -OutFile "radb-client.exe"
-
-# Add to PATH (User level)
-$UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
-$BinPath = "$HOME\bin"
-New-Item -ItemType Directory -Force -Path $BinPath
-Move-Item radb-client.exe $BinPath\
-[Environment]::SetEnvironmentVariable("Path", "$UserPath;$BinPath", "User")
-
-# Verify (restart PowerShell first)
-radb-client --version
-```
-
-**Manual Installation:**
-
-1. Download `radb-client-windows-amd64.exe` from [releases page](https://github.com/example/radb-client/releases)
-2. Rename to `radb-client.exe`
-3. Move to a directory in your PATH (e.g., `C:\Windows\System32` or `C:\Program Files\radb-client\`)
-4. Open new Command Prompt or PowerShell
-5. Run: `radb-client --version`
-
-#### Option 2: Package Manager (Future)
-
-**Chocolatey (Future):**
-```powershell
-# Future
-# choco install radb-client
-```
-
-**Scoop (Future):**
-```powershell
-# Future
-# scoop install radb-client
-```
-
-#### Windows Credential Manager
-
-The client uses Windows Credential Manager automatically. No additional setup required.
-
-#### Windows Defender SmartScreen
-
-If Windows Defender blocks execution:
-
-1. Right-click on radb-client.exe
-2. Select "Properties"
-3. Check "Unblock" at the bottom
-4. Click "Apply"
-
----
-
-## Installation from Source
-
-### Prerequisites
-
-- Go 1.21 or later
-- Git
-- Make (optional, but recommended)
-
-### Install Go
-
-**Linux:**
-```bash
-wget https://go.dev/dl/go1.21.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.21.linux-amd64.tar.gz
-export PATH=$PATH:/usr/local/go/bin
-echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-```
-
-**macOS:**
-```bash
-brew install go
-```
-
-**Windows:**
-Download and run installer from https://go.dev/dl/
-
-### Build from Source
+### Test Installation
 
 ```bash
-# Clone repository
-git clone https://github.com/example/radb-client.git
-cd radb-client
+# Check version
+radb-client version
 
-# Build
-make build
-# Or without make:
-go build -o radb-client ./cmd/radb-client
+# Full version info
+radb-client version --format json
 
-# Install
-sudo mv radb-client /usr/local/bin/
-# Or on Windows:
-# Move-Item radb-client.exe C:\Windows\System32\
+# Check help
+radb-client --help
 
-# Verify
-radb-client --version
+# Test configuration
+radb-client config show
+
+# Test authentication status
+radb-client auth status
 ```
 
-### Development Installation
-
-If you're developing the client:
+### Test Basic Commands
 
 ```bash
-# Install directly from source
-go install ./cmd/radb-client
+# List routes (requires authentication)
+radb-client route list
 
-# This installs to $GOPATH/bin (usually ~/go/bin)
-# Make sure it's in your PATH
-export PATH=$PATH:$HOME/go/bin
+# List contacts
+radb-client contact list
+
+# Create snapshot
+radb-client snapshot create
+
+# View history
+radb-client history list
+```
+
+### Run Test Suite
+
+```bash
+# Run unit tests
+go test ./...
+
+# Run with coverage
+go test -cover ./...
+
+# Run specific package
+go test ./internal/config/...
+```
+
+### Manual Testing
+
+Follow comprehensive testing procedures:
+
+```bash
+cat TESTING_RUNBOOK.md
 ```
 
 ---
 
-## Container Installation
+## Troubleshooting
 
-### Docker (Future)
+### Build Issues
 
-**Note:** Docker image is planned for future releases.
+**Issue: Go version too old**
+```
+go: directive requires go version >= 1.23
+```
 
+Solution:
 ```bash
-# Future
-# docker pull ghcr.io/example/radb-client:latest
-# docker run -it ghcr.io/example/radb-client:latest --version
+# Update Go
+go install golang.org/dl/go1.24@latest
+go1.24 download
 ```
 
-### Podman (Future)
+**Issue: Missing dependencies**
+```
+missing go.sum entry
+```
 
+Solution:
 ```bash
-# Future
-# podman pull ghcr.io/example/radb-client:latest
-# podman run -it ghcr.io/example/radb-client:latest --version
+go mod tidy
+go mod download
 ```
 
----
+### Installation Issues
 
-## Post-Installation
+**Issue: Permission denied**
+```
+cannot create directory: permission denied
+```
 
-### Initial Setup
+Solution:
+- Use user installation option (1) in interactive installer
+- Or use sudo for system installation
 
-1. **Verify installation:**
-   ```bash
-   radb-client --version
-   ```
+**Issue: Binary not found in PATH**
+```
+radb-client: command not found
+```
 
-2. **Initialize configuration:**
-   ```bash
-   radb-client config init
-   ```
-
-3. **Authenticate:**
-   ```bash
-   radb-client auth login
-   ```
-   Enter your RADb username (email) and API key.
-
-4. **Test connection:**
-   ```bash
-   radb-client auth test
-   ```
-
-5. **List routes:**
-   ```bash
-   radb-client route list
-   ```
-
-### Shell Completion
-
-Enable tab completion for your shell:
-
-**Bash:**
+Solution:
 ```bash
-radb-client completion bash > /etc/bash_completion.d/radb-client
-# Or for user only:
-radb-client completion bash > ~/.bash_completion
-source ~/.bash_completion
+# Add to PATH
+echo 'export PATH="$PATH:$HOME/bin"' >> ~/.bashrc
+source ~/.bashrc
+
+# Or use full path
+/home/user/bin/radb-client version
 ```
 
-**Zsh:**
+### Configuration Issues
+
+**Issue: Config file not found**
+```
+Error: config file not found
+```
+
+Solution:
 ```bash
-radb-client completion zsh > ~/.zsh/completion/_radb-client
-# Add to .zshrc:
-fpath=(~/.zsh/completion $fpath)
-autoload -Uz compinit && compinit
+# Initialize config
+radb-client config init
+
+# Or specify config location
+radb-client --config /path/to/config.yaml <command>
 ```
 
-**Fish:**
+**Issue: Permission denied on config directory**
+```
+permission denied: ~/.radb-client
+```
+
+Solution:
 ```bash
-radb-client completion fish > ~/.config/fish/completions/radb-client.fish
+# Fix permissions
+chmod 700 ~/.radb-client
+chmod 600 ~/.radb-client/config.yaml
 ```
 
-**PowerShell:**
-```powershell
-radb-client completion powershell | Out-String | Invoke-Expression
-# Add to profile for persistence:
-radb-client completion powershell >> $PROFILE
+### Authentication Issues
+
+**Issue: Credentials not stored**
+```
+Error: no credentials found
 ```
 
-### System Integration
-
-#### Systemd Service (Linux)
-
-For running as a service:
-
-```ini
-# /etc/systemd/system/radb-client.service
-[Unit]
-Description=RADb Client Service
-After=network.target
-
-[Service]
-Type=simple
-User=radb
-Environment="RADB_USERNAME=user@example.com"
-Environment="RADB_API_KEY=your-api-key"
-ExecStart=/usr/local/bin/radb-client route list
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable and start:
+Solution:
 ```bash
-sudo systemctl enable radb-client
-sudo systemctl start radb-client
+# Login again
+radb-client auth login
+
+# Check status
+radb-client auth status
 ```
 
-#### Cron Job
+**Issue: Keyring access denied**
+```
+Error: could not access keyring
+```
 
-For periodic checks:
+Solution:
+- Credentials will fall back to encrypted file storage
+- Check system keyring is accessible
+- Verify keyring daemon is running (Linux)
 
+### Daemon Issues
+
+**Issue: Daemon fails to start**
+```
+Failed to start radb-daemon.service
+```
+
+Solution:
 ```bash
-# Edit crontab
-crontab -e
+# Check logs
+sudo journalctl -u radb-daemon -n 50
 
-# Add line (runs daily at 9 AM):
-0 9 * * * /usr/local/bin/radb-client route list >> /var/log/radb-client.log 2>&1
-```
+# Verify binary
+which radb-client
 
-#### Launchd (macOS)
+# Check permissions
+ls -l /usr/local/bin/radb-client
 
-```xml
-<!-- ~/Library/LaunchAgents/com.example.radb-client.plist -->
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.example.radb-client</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/usr/local/bin/radb-client</string>
-        <string>route</string>
-        <string>list</string>
-    </array>
-    <key>StartInterval</key>
-    <integer>86400</integer>
-</dict>
-</plist>
-```
-
-Load:
-```bash
-launchctl load ~/Library/LaunchAgents/com.example.radb-client.plist
-```
-
-#### Windows Task Scheduler
-
-Create a scheduled task:
-
-```powershell
-# PowerShell as Administrator
-$action = New-ScheduledTaskAction -Execute 'radb-client' -Argument 'route list'
-$trigger = New-ScheduledTaskTrigger -Daily -At 9am
-Register-ScheduledTask -TaskName "RADb Client" -Action $action -Trigger $trigger
-```
-
----
-
-## Upgrading
-
-### Binary Upgrade
-
-**Linux/macOS:**
-
-```bash
-# Download new version
-curl -L https://github.com/example/radb-client/releases/latest/download/radb-client-linux-amd64 -o radb-client
-chmod +x radb-client
-
-# Backup old version (optional)
-sudo mv /usr/local/bin/radb-client /usr/local/bin/radb-client.backup
-
-# Install new version
-sudo mv radb-client /usr/local/bin/
-
-# Verify
-radb-client --version
-```
-
-**Windows:**
-
-```powershell
-# Backup old version
-Copy-Item C:\Windows\System32\radb-client.exe C:\Windows\System32\radb-client.exe.backup
-
-# Download and install new version
-Invoke-WebRequest -Uri "https://github.com/example/radb-client/releases/latest/download/radb-client-windows-amd64.exe" -OutFile "radb-client.exe"
-Move-Item radb-client.exe C:\Windows\System32\ -Force
-```
-
-### Configuration Migration
-
-Configuration is usually backward compatible. Check [CHANGELOG.md](CHANGELOG.md) for breaking changes.
-
-```bash
-# Backup configuration
-cp ~/.radb-client/config.yaml ~/.radb-client/config.yaml.backup
-
-# Validate after upgrade
-radb-client config validate
-
-# If issues, reset to defaults:
-# radb-client config reset
+# Reinstall daemon
+sudo ./scripts/install-daemon.sh
 ```
 
 ---
@@ -525,155 +556,111 @@ radb-client config validate
 
 ### Remove Binary
 
-**Linux/macOS:**
+**User installation:**
 ```bash
-sudo rm /usr/local/bin/radb-client
+rm -f $HOME/bin/radb-client
 ```
 
-**Windows:**
-```powershell
-Remove-Item C:\Windows\System32\radb-client.exe
-```
-
-### Remove Configuration and Data
-
-**Warning:** This removes all local data including snapshots and history.
-
-**Linux/macOS:**
+**System installation:**
 ```bash
-rm -rf ~/.radb-client/
+sudo rm -f /usr/local/bin/radb-client
 ```
 
-**Windows:**
-```powershell
-Remove-Item -Recurse -Force $HOME\.radb-client\
-```
-
-### Remove Credentials
-
-**macOS:**
-```bash
-security delete-generic-password -s radb-client
-```
-
-**Linux:**
-```bash
-# GNOME Keyring
-secret-tool clear service radb-client
-
-# Or just remove data directory (includes encrypted file)
-rm -rf ~/.radb-client/
-```
-
-**Windows:**
-```powershell
-cmdkey /delete:radb-client
-```
-
----
-
-## Troubleshooting
-
-### Installation Issues
-
-**"Command not found" after installation**
-
-Check PATH:
-```bash
-echo $PATH
-# Should include /usr/local/bin or installation directory
-```
-
-Add to PATH if needed:
-```bash
-export PATH=$PATH:/usr/local/bin
-echo 'export PATH=$PATH:/usr/local/bin' >> ~/.bashrc
-```
-
-**"Permission denied" when installing**
-
-Use sudo:
-```bash
-sudo mv radb-client /usr/local/bin/
-```
-
-Or install to user directory:
-```bash
-mkdir -p ~/bin
-mv radb-client ~/bin/
-export PATH=$PATH:~/bin
-```
-
-**macOS: "Cannot be opened because the developer cannot be verified"**
+### Remove Configuration
 
 ```bash
-xattr -d com.apple.quarantine /usr/local/bin/radb-client
+rm -rf ~/.radb-client
 ```
 
-**Windows: "Windows protected your PC"**
+### Remove Daemon (Linux)
 
-1. Click "More info"
-2. Click "Run anyway"
-
-Or remove mark of the web:
-```powershell
-Unblock-File radb-client.exe
-```
-
-### Runtime Issues
-
-**"Failed to load configuration"**
-
-Initialize configuration:
 ```bash
-radb-client config init
+# Stop and disable service
+sudo systemctl stop radb-daemon
+sudo systemctl disable radb-daemon
+
+# Remove files
+sudo rm -f /etc/systemd/system/radb-daemon.service
+sudo rm -f /usr/local/bin/radb-daemon
+sudo rm -rf /etc/radb-client
+sudo rm -rf /var/log/radb-client
+
+# Remove user
+sudo userdel -r radb
+
+# Reload systemd
+sudo systemctl daemon-reload
 ```
 
-**"Failed to store credentials"**
+### Complete Removal
 
-Check keyring availability or use environment variables:
 ```bash
-export RADB_USERNAME="user@example.com"
-export RADB_API_KEY="your-api-key"
+# Remove everything
+rm -f $HOME/bin/radb-client
+sudo rm -f /usr/local/bin/radb-client
+rm -rf ~/.radb-client
+
+# If daemon was installed
+sudo systemctl stop radb-daemon 2>/dev/null
+sudo systemctl disable radb-daemon 2>/dev/null
+sudo rm -f /etc/systemd/system/radb-daemon.service
+sudo rm -f /usr/local/bin/radb-daemon
+sudo rm -rf /etc/radb-client
+sudo rm -rf /var/log/radb-client
+sudo userdel -r radb 2>/dev/null
+sudo systemctl daemon-reload
 ```
-
-**For more troubleshooting, see [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**
-
----
-
-## Platform Requirements
-
-### Minimum Requirements
-
-**Linux:**
-- Kernel: 3.10 or later
-- libc: glibc 2.17 or later / musl libc
-
-**macOS:**
-- macOS 10.13 (High Sierra) or later
-
-**Windows:**
-- Windows 7 or later
-- Windows Server 2012 or later
-
-### Recommended System Specifications
-
-- RAM: 256 MB available
-- Disk: 50 MB for binary + 100 MB for data
-- Network: Internet connection for API access
 
 ---
 
 ## Next Steps
 
-After installation:
+After successful installation:
 
-1. Read the [User Guide](docs/USER_GUIDE.md)
-2. Review [Configuration Guide](docs/CONFIGURATION.md)
-3. Explore [Examples](docs/EXAMPLES.md)
+1. **Read the Quick Start Guide**
+   ```bash
+   cat QUICKSTART.md
+   ```
+
+2. **Learn the CLI**
+   ```bash
+   radb-client --help
+   radb-client route --help
+   ```
+
+3. **Run Manual Tests**
+   ```bash
+   cat TESTING_RUNBOOK.md
+   ```
+
+4. **Configure for Your Environment**
+   - Edit `~/.radb-client/config.yaml`
+   - Adjust rate limits, cache settings, etc.
+
+5. **Set Up Automation**
+   - Install daemon for continuous monitoring
+   - Or set up cron jobs for periodic checks
+
+---
+
+## Additional Documentation
+
+- **Quick Start**: `QUICKSTART.md` - Get started quickly
+- **Testing Guide**: `TESTING_RUNBOOK.md` - Comprehensive testing procedures
+- **Daemon Deployment**: `docs/DAEMON_DEPLOYMENT.md` - Daemon setup and management
+- **Version Management**: `docs/VERSION_MANAGEMENT.md` - Version and release process
+- **Design Documents**: `DESIGN.md`, `GO_IMPLEMENTATION.md` - Architecture details
+
+---
 
 ## Support
 
-- Documentation: [docs/](docs/)
-- Issues: [GitHub Issues](https://github.com/example/radb-client/issues)
-- Discussions: [GitHub Discussions](https://github.com/example/radb-client/discussions)
+- **Issues**: https://github.com/brndnsvr/radb-tools/issues
+- **Discussions**: https://github.com/brndnsvr/radb-tools/discussions
+- **Documentation**: https://github.com/brndnsvr/radb-tools/tree/main/docs
+
+---
+
+**Installation complete! 🚀**
+
+Run `radb-client --help` to get started.

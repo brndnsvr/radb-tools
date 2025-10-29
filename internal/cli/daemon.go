@@ -107,10 +107,6 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 				logrus.Info("Shutting down gracefully...")
 				return nil
 			}
-
-		case <-ctx.Done():
-			logrus.Info("Context cancelled, shutting down...")
-			return ctx.Err()
 		}
 	}
 }
