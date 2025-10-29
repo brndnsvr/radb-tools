@@ -1,0 +1,47 @@
+# RADb API Client Configuration
+# Copy this file to ~/.radb-client/config.yaml and customize
+
+api:
+  # Base URL for the RADb API
+  base_url: https://api.radb.net
+
+  # Database source (currently only RADB is supported)
+  source: RADB
+
+  # Preferred data format (json or text)
+  format: json
+
+  # Request timeout in seconds
+  timeout: 30
+
+preferences:
+  # Directory for caching current state
+  cache_dir: ~/.radb-client/cache
+
+  # Directory for historical snapshots
+  history_dir: ~/.radb-client/history
+
+  # Logging level (DEBUG, INFO, WARN, ERROR)
+  log_level: INFO
+
+  # Maximum number of historical snapshots to retain
+  # Set to 0 for unlimited
+  max_snapshots: 100
+
+  # Automatically create snapshot on list operations
+  auto_snapshot: true
+
+  # Default output format (table, json, yaml)
+  output_format: table
+
+  # Enable colored output
+  color: true
+
+# Note: Credentials are stored securely in the system keyring
+# Use 'radb-client auth login' to configure authentication
+
+# Environment variable overrides:
+# RADB_API_BASE_URL - Override api.base_url
+# RADB_API_SOURCE - Override api.source
+# RADB_API_FORMAT - Override api.format
+# RADB_PREFERENCES_LOG_LEVEL - Override preferences.log_level
