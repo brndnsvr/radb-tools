@@ -88,7 +88,7 @@ func Default() *Config {
 
 	return &Config{
 		API: APIConfig{
-			BaseURL: "https://api.radb.net",
+			BaseURL: "https://api.radb.net/api",
 			Source:  "RADB",
 			Format:  "json",
 			Timeout: 30,

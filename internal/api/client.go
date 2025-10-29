@@ -45,34 +45,22 @@ func NewHTTPClient(baseURL, source string, timeout int, logger *logrus.Logger) *
 
 // Login authenticates with the RADb API.
 func (c *HTTPClient) Login(ctx context.Context, username, password string) error {
+	// Store credentials
 	c.username = username
 	c.password = password
-
-	// Test authentication with a simple query
-	req, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/"+c.source+"/search", nil)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.SetBasicAuth(username, password)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("login failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusUnauthorized {
-		return fmt.Errorf("authentication failed: invalid credentials")
-	}
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusBadRequest {
-		return fmt.Errorf("login failed with status: %d", resp.StatusCode)
-	}
-
 	c.authenticated = true
-	c.logger.Infof("Successfully authenticated as %s", username)
+
+	c.logger.Infof("Credentials stored for %s", username)
+	c.logger.Info("Note: Credentials will be validated on first API request")
+
+	// Note: We don't test auth here because most RADb API endpoints either:
+	// 1. Don't require auth (like ASN validation)
+	// 2. Require specific parameters (like search needs query-string)
+	// 3. Need objects to exist (like route GET)
+	//
+	// The credentials will be validated when the user makes their first actual API call.
+	// If invalid, they'll get a clear 401 Unauthorized error at that time.
+
 	return nil
 }
 
