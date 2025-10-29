@@ -4,8 +4,9 @@
 *.dll
 *.so
 *.dylib
-radb-client
-dist/
+/radb-client
+/bin/
+/dist/
 
 # Test binary, built with `go test -c`
 *.test

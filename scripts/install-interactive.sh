@@ -213,12 +213,29 @@ prompt_config_setup() {
     fi
 
     # Initialize config
-    if ! $BINARY config init; then
-        error "Failed to initialize configuration"
-        return
+    if [ -f "$HOME/.radb-client/config.yaml" ]; then
+        info "Configuration already exists at $HOME/.radb-client/config.yaml"
+        read -p "Would you like to overwrite it? [y/N]: " overwrite
+        case "$overwrite" in
+            [yY]|[yY][eE][sS])
+                rm -f "$HOME/.radb-client/config.yaml"
+                if ! $BINARY config init 2>&1; then
+                    error "Failed to initialize configuration"
+                    return
+                fi
+                success "Configuration re-initialized"
+                ;;
+            *)
+                info "Keeping existing configuration"
+                ;;
+        esac
+    else
+        if ! $BINARY config init 2>&1; then
+            error "Failed to initialize configuration"
+            return
+        fi
+        success "Configuration initialized"
     fi
-
-    success "Configuration initialized"
 }
 
 # Setup credentials
@@ -275,6 +292,13 @@ prompt_daemon_setup() {
     info "Running daemon installation..."
     echo ""
 
+    # Determine which binary to use for daemon
+    if [ -n "$INSTALL_DIR" ] && [ -f "$INSTALL_DIR/radb-client" ]; then
+        DAEMON_BINARY="$INSTALL_DIR/radb-client"
+    else
+        DAEMON_BINARY="$(pwd)/bin/radb-client"
+    fi
+
     # Check if we need to set environment variables for daemon
     read -p "Would you like to configure credentials for the daemon? [y/N]: " cred_response
     case "$cred_response" in
@@ -289,7 +313,7 @@ prompt_daemon_setup() {
             ;;
     esac
 
-    if ! sudo bash scripts/install-daemon.sh; then
+    if ! sudo bash scripts/install-daemon.sh --binary "$DAEMON_BINARY"; then
         error "Daemon installation failed"
         return
     fi
