@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/bss/radb-client/internal/config"
 	"github.com/spf13/cobra"
@@ -18,6 +19,21 @@ var configInitCmd = &cobra.Command{
 	Short: "Initialize configuration",
 	Long:  "Create a new configuration file with default values.",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		force, _ := cmd.Flags().GetBool("force")
+
+		// Check if config exists and handle --force
+		cfg := config.Default()
+		if !force {
+			if _, err := os.Stat(cfg.ConfigFile); err == nil {
+				return fmt.Errorf("configuration already exists at %s (use --force to overwrite)", cfg.ConfigFile)
+			}
+		}
+
+		// Remove existing config if --force
+		if force {
+			os.Remove(cfg.ConfigFile)
+		}
+
 		cfg, err := config.Initialize()
 		if err != nil {
 			return err
@@ -98,6 +114,10 @@ var configSetCmd = &cobra.Command{
 }
 
 func init() {
+	// Add flags to commands
+	configInitCmd.Flags().Bool("force", false, "Overwrite existing configuration")
+
+	// Register subcommands
 	configCmd.AddCommand(configInitCmd)
 	configCmd.AddCommand(configShowCmd)
 	configCmd.AddCommand(configSetCmd)

@@ -9,6 +9,8 @@ import (
 
 func main() {
 	if err := cli.Execute(); err != nil {
+		// Error is already printed by cobra (if SilenceErrors is false)
+		// or by the command itself
 		os.Exit(1)
 	}
 }

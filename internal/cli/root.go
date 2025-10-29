@@ -33,7 +33,7 @@ Manage route objects, contacts, and track changes over time.`,
 		Version: version.Short(),
 		PersistentPreRunE: initializeContext,
 		SilenceUsage:      true,
-		SilenceErrors:     true,
+		SilenceErrors:     false, // Show errors during debugging
 	}
 )
 
