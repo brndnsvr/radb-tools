@@ -3,7 +3,6 @@ package cli
 import (
 	"context"
 	"fmt"
-	"os"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -21,8 +20,6 @@ var authLoginCmd = &cobra.Command{
 	Short: "Authenticate with RADb API",
 	Long:  "Login to the RADb API using username and password.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Fprintf(os.Stderr, "[DEBUG] Starting auth login\n")
-
 		// Prompt for username
 		var username string
 		if ctx.Config.Credentials.Username != "" {
@@ -41,7 +38,6 @@ var authLoginCmd = &cobra.Command{
 		if username == "" {
 			return fmt.Errorf("username is required")
 		}
-		fmt.Fprintf(os.Stderr, "[DEBUG] Got username: %s\n", username)
 
 		// Prompt for password
 		fmt.Print("Password: ")
@@ -55,39 +51,26 @@ var authLoginCmd = &cobra.Command{
 		if password == "" {
 			return fmt.Errorf("password is required")
 		}
-		fmt.Fprintf(os.Stderr, "[DEBUG] Got password (length: %d)\n", len(password))
 
 		// Attempt login
-		fmt.Fprintf(os.Stderr, "[DEBUG] Calling APIClient.Login()\n")
 		ctxTimeout := context.Background()
 		if err := ctx.APIClient.Login(ctxTimeout, username, password); err != nil {
-			fmt.Fprintf(os.Stderr, "[DEBUG] Login failed: %v\n", err)
 			return fmt.Errorf("login failed: %w", err)
 		}
-		fmt.Fprintf(os.Stderr, "[DEBUG] APIClient.Login() succeeded\n")
 
 		// Store credentials
-		fmt.Fprintf(os.Stderr, "[DEBUG] Storing credentials with CredMgr.SetPassword()\n")
 		if err := ctx.CredMgr.SetPassword(username, password); err != nil {
-			fmt.Fprintf(os.Stderr, "[DEBUG] SetPassword failed: %v\n", err)
 			ctx.Logger.Warnf("Failed to store credentials: %v", err)
 			fmt.Println("Warning: Credentials were not saved securely")
-		} else {
-			fmt.Fprintf(os.Stderr, "[DEBUG] SetPassword succeeded\n")
 		}
 
 		// Update config with username
-		fmt.Fprintf(os.Stderr, "[DEBUG] Updating config with username\n")
 		ctx.Config.Credentials.Username = username
 		if err := ctx.Config.Save(); err != nil {
-			fmt.Fprintf(os.Stderr, "[DEBUG] Config.Save() failed: %v\n", err)
 			ctx.Logger.Warnf("Failed to save config: %v", err)
-		} else {
-			fmt.Fprintf(os.Stderr, "[DEBUG] Config.Save() succeeded\n")
 		}
 
 		fmt.Printf("Successfully authenticated as %s\n", username)
-		fmt.Fprintf(os.Stderr, "[DEBUG] Auth login complete\n")
 		return nil
 	},
 }

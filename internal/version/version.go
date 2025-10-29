@@ -9,7 +9,7 @@ import (
 // These variables are set at build time via -ldflags
 var (
 	// Version is the semantic version of the application
-	Version = "0.9.0-pre"
+	Version = "0.0.42"
 
 	// GitCommit is the git commit hash (short)
 	GitCommit = "dev"
