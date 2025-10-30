@@ -2,6 +2,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -109,6 +110,23 @@ func initializeContext(cmd *cobra.Command, args []string) error {
 		cfg.API.Timeout,
 		logger,
 	)
+
+	// Load credentials into API client if available
+	if cfg.Credentials.Username != "" {
+		password, err := credMgr.GetPassword(cfg.Credentials.Username)
+		if err == nil {
+			logger.Infof("[DEBUG] Retrieved password from storage (length: %d)", len(password))
+			// Login with stored credentials
+			bgCtx := context.Background()
+			if err := ctx.APIClient.Login(bgCtx, cfg.Credentials.Username, password); err != nil {
+				logger.Warnf("Failed to load stored credentials: %v", err)
+			} else {
+				logger.Debugf("Loaded credentials for %s", cfg.Credentials.Username)
+			}
+		} else {
+			logger.Debugf("No stored credentials found: %v", err)
+		}
+	}
 
 	// Initialize state manager
 	stateMgr, err := state.NewFileManager(cfg.Preferences.CacheDir, logger)
