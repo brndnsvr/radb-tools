@@ -33,14 +33,16 @@ func (c *HTTPClient) Search(ctx context.Context, query string, objectType string
 		return nil, fmt.Errorf("search query is required")
 	}
 
-	// Build query parameters
+	// Build query parameters per RADb API requirements
 	params := url.Values{}
-	params.Add("q", query)
+	params.Add("query-string", query)
 	if objectType != "" {
 		params.Add("type", objectType)
 	}
 
-	path := fmt.Sprintf("/%s/search?%s", c.source, params.Encode())
+	// Use lowercase source name in path
+	sourceLower := "radb"  // API requires lowercase
+	path := fmt.Sprintf("/%s/search?%s", sourceLower, params.Encode())
 	resp, err := c.doRequest(ctx, "GET", path, nil)
 	if err != nil {
 		return nil, fmt.Errorf("search failed: %w", err)
@@ -52,9 +54,21 @@ func (c *HTTPClient) Search(ctx context.Context, query string, objectType string
 		return nil, fmt.Errorf("search failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
+	// Read response body for debugging
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+	c.logger.Debugf("[DEBUG] Response body (first 500 chars): %s", string(body[:min(500, len(body))]))
+
 	var result SearchResult
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode search response: %w", err)
+	if err := json.Unmarshal(body, &result); err != nil {
+		c.logger.Debugf("[DEBUG] JSON decode failed, body might be RPSL format")
+		// Return raw text as a simple result
+		return map[string]interface{}{
+			"raw_response": string(body),
+			"format":       "rpsl",
+		}, nil
 	}
 
 	c.logger.Infof("Search returned %d results", result.Count)

@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bss/radb-client/internal/api"
-	"github.com/bss/radb-client/internal/config"
 	"github.com/bss/radb-client/internal/models"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -40,25 +38,10 @@ func newContactListCmd(logger *logrus.Logger) *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List all contacts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			cmdCtx := context.Background()
 
-			cfg, err := config.Load()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-
-			client := api.NewHTTPClient(cfg.API.BaseURL, cfg.API.Source, cfg.API.Timeout, logger)
-
-			creds, err := config.LoadCredentials()
-			if err != nil {
-				return fmt.Errorf("not authenticated: please run 'radb-client auth login' first")
-			}
-
-			if err := client.Login(ctx, creds.Username, creds.Password); err != nil {
-				return fmt.Errorf("authentication failed: %w", err)
-			}
-
-			contacts, err := client.ListContacts(ctx)
+			// Use shared API client (already authenticated)
+			contacts, err := ctx.APIClient.ListContacts(cmdCtx)
 			if err != nil {
 				return fmt.Errorf("failed to list contacts: %w", err)
 			}
@@ -81,26 +64,11 @@ func newContactShowCmd(logger *logrus.Logger) *cobra.Command {
 		Short: "Show a specific contact",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			cmdCtx := context.Background()
 			id := args[0]
 
-			cfg, err := config.Load()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-
-			client := api.NewHTTPClient(cfg.API.BaseURL, cfg.API.Source, cfg.API.Timeout, logger)
-
-			creds, err := config.LoadCredentials()
-			if err != nil {
-				return fmt.Errorf("not authenticated: please run 'radb-client auth login' first")
-			}
-
-			if err := client.Login(ctx, creds.Username, creds.Password); err != nil {
-				return fmt.Errorf("authentication failed: %w", err)
-			}
-
-			contact, err := client.GetContact(ctx, id)
+			// Use shared API client (already authenticated)
+			contact, err := ctx.APIClient.GetContact(cmdCtx, id)
 			if err != nil {
 				return fmt.Errorf("failed to get contact: %w", err)
 			}
@@ -147,12 +115,7 @@ func newContactCreateCmd(logger *logrus.Logger) *cobra.Command {
 		Use:   "create",
 		Short: "Create a new contact",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
-
-			cfg, err := config.Load()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
+			cmdCtx := context.Background()
 
 			contact := &models.Contact{
 				Name:         name,
@@ -167,18 +130,8 @@ func newContactCreateCmd(logger *logrus.Logger) *cobra.Command {
 				return fmt.Errorf("contact validation failed: %w", err)
 			}
 
-			client := api.NewHTTPClient(cfg.API.BaseURL, cfg.API.Source, cfg.API.Timeout, logger)
-
-			creds, err := config.LoadCredentials()
-			if err != nil {
-				return fmt.Errorf("not authenticated: please run 'radb-client auth login' first")
-			}
-
-			if err := client.Login(ctx, creds.Username, creds.Password); err != nil {
-				return fmt.Errorf("authentication failed: %w", err)
-			}
-
-			if err := client.CreateContact(ctx, contact); err != nil {
+			// Use shared API client (already authenticated)
+			if err := ctx.APIClient.CreateContact(cmdCtx, contact); err != nil {
 				return fmt.Errorf("failed to create contact: %w", err)
 			}
 
@@ -214,26 +167,11 @@ func newContactUpdateCmd(logger *logrus.Logger) *cobra.Command {
 		Short: "Update an existing contact",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			cmdCtx := context.Background()
 			id := args[0]
 
-			cfg, err := config.Load()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-
-			client := api.NewHTTPClient(cfg.API.BaseURL, cfg.API.Source, cfg.API.Timeout, logger)
-
-			creds, err := config.LoadCredentials()
-			if err != nil {
-				return fmt.Errorf("not authenticated: please run 'radb-client auth login' first")
-			}
-
-			if err := client.Login(ctx, creds.Username, creds.Password); err != nil {
-				return fmt.Errorf("authentication failed: %w", err)
-			}
-
-			contact, err := client.GetContact(ctx, id)
+			// Use shared API client (already authenticated)
+			contact, err := ctx.APIClient.GetContact(cmdCtx, id)
 			if err != nil {
 				return fmt.Errorf("failed to get contact: %w", err)
 			}
@@ -254,7 +192,7 @@ func newContactUpdateCmd(logger *logrus.Logger) *cobra.Command {
 				contact.Organization = org
 			}
 
-			if err := client.UpdateContact(ctx, contact); err != nil {
+			if err := ctx.APIClient.UpdateContact(cmdCtx, contact); err != nil {
 				return fmt.Errorf("failed to update contact: %w", err)
 			}
 
@@ -281,30 +219,15 @@ func newContactDeleteCmd(logger *logrus.Logger) *cobra.Command {
 		Short: "Delete a contact",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			cmdCtx := context.Background()
 			id := args[0]
 
 			if !confirm {
 				return fmt.Errorf("please confirm deletion with --confirm flag")
 			}
 
-			cfg, err := config.Load()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-
-			client := api.NewHTTPClient(cfg.API.BaseURL, cfg.API.Source, cfg.API.Timeout, logger)
-
-			creds, err := config.LoadCredentials()
-			if err != nil {
-				return fmt.Errorf("not authenticated: please run 'radb-client auth login' first")
-			}
-
-			if err := client.Login(ctx, creds.Username, creds.Password); err != nil {
-				return fmt.Errorf("authentication failed: %w", err)
-			}
-
-			if err := client.DeleteContact(ctx, id); err != nil {
+			// Use shared API client (already authenticated)
+			if err := ctx.APIClient.DeleteContact(cmdCtx, id); err != nil {
 				return fmt.Errorf("failed to delete contact: %w", err)
 			}
 

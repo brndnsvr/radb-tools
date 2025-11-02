@@ -50,8 +50,8 @@ func (c *HTTPClient) Login(ctx context.Context, username, password string) error
 	c.password = password
 	c.authenticated = true
 
-	c.logger.Infof("Credentials stored for %s", username)
-	c.logger.Info("Note: Credentials will be validated on first API request")
+	c.logger.Debugf("Credentials stored for %s (length: %d)", username, len(password))
+	c.logger.Debug("Credentials will be validated on first API request")
 
 	// Note: We don't test auth here because most RADb API endpoints either:
 	// 1. Don't require auth (like ASN validation)
@@ -104,6 +104,7 @@ func (c *HTTPClient) doRequest(ctx context.Context, method, path string, body in
 	// Set headers
 	if c.authenticated {
 		req.SetBasicAuth(c.username, c.password)
+		c.logger.Debugf("Set BasicAuth for request (user: %s)", c.username)
 	}
 	req.Header.Set("Accept", "application/json")
 	if body != nil {

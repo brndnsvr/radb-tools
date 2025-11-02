@@ -67,6 +67,9 @@ func init() {
 	rootCmd.AddCommand(NewHistoryCmd(logger))
 	rootCmd.AddCommand(NewSearchCmd(logger))
 
+	// CenterSquare-specific commands
+	rootCmd.AddCommand(NewCsqrCmd())
+
 	// Daemon mode
 	rootCmd.AddCommand(daemonCmd)
 }
@@ -115,7 +118,7 @@ func initializeContext(cmd *cobra.Command, args []string) error {
 	if cfg.Credentials.Username != "" {
 		password, err := credMgr.GetPassword(cfg.Credentials.Username)
 		if err == nil {
-			logger.Infof("[DEBUG] Retrieved password from storage (length: %d)", len(password))
+			logger.Debugf("Retrieved password from storage (length: %d)", len(password))
 			// Login with stored credentials
 			bgCtx := context.Background()
 			if err := ctx.APIClient.Login(bgCtx, cfg.Credentials.Username, password); err != nil {

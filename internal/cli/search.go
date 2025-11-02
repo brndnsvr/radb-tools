@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/bss/radb-client/internal/api"
-	"github.com/bss/radb-client/internal/config"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -39,26 +38,11 @@ func newSearchQueryCmd(logger *logrus.Logger) *cobra.Command {
 		Short: "Search for objects",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			cmdCtx := context.Background()
 			query := args[0]
 
-			cfg, err := config.Load()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-
-			client := api.NewHTTPClient(cfg.API.BaseURL, cfg.API.Source, cfg.API.Timeout, logger)
-
-			creds, err := config.LoadCredentials()
-			if err != nil {
-				return fmt.Errorf("not authenticated: please run 'radb-client auth login' first")
-			}
-
-			if err := client.Login(ctx, creds.Username, creds.Password); err != nil {
-				return fmt.Errorf("authentication failed: %w", err)
-			}
-
-			results, err := client.Search(ctx, query, objectType)
+			// Use the shared API client from CLI context (already authenticated)
+			results, err := ctx.APIClient.Search(cmdCtx, query, objectType)
 			if err != nil {
 				return fmt.Errorf("search failed: %w", err)
 			}
@@ -70,7 +54,9 @@ func newSearchQueryCmd(logger *logrus.Logger) *cobra.Command {
 			case "yaml":
 				return outputter.renderYAML(results)
 			default:
+				// Handle both JSON (SearchResult) and RPSL (map) responses
 				if searchResult, ok := results.(*api.SearchResult); ok {
+					// JSON format response
 					fmt.Printf("Found %d results for query: %s\n\n", searchResult.Count, searchResult.Query)
 					for i, result := range searchResult.Results {
 						fmt.Printf("%d. ", i+1)
@@ -78,6 +64,11 @@ func newSearchQueryCmd(logger *logrus.Logger) *cobra.Command {
 							fmt.Printf("%s=%v ", key, value)
 						}
 						fmt.Println()
+					}
+				} else if rawMap, ok := results.(map[string]interface{}); ok {
+					// RPSL format response
+					if rawResponse, ok := rawMap["raw_response"].(string); ok {
+						fmt.Println(rawResponse)
 					}
 				}
 			}
@@ -99,26 +90,11 @@ func newSearchValidateASNCmd(logger *logrus.Logger) *cobra.Command {
 		Short: "Validate an ASN",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			cmdCtx := context.Background()
 			asn := args[0]
 
-			cfg, err := config.Load()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-
-			client := api.NewHTTPClient(cfg.API.BaseURL, cfg.API.Source, cfg.API.Timeout, logger)
-
-			creds, err := config.LoadCredentials()
-			if err != nil {
-				return fmt.Errorf("not authenticated: please run 'radb-client auth login' first")
-			}
-
-			if err := client.Login(ctx, creds.Username, creds.Password); err != nil {
-				return fmt.Errorf("authentication failed: %w", err)
-			}
-
-			valid, err := client.ValidateASN(ctx, asn)
+			// Use the shared API client from CLI context (already authenticated)
+			valid, err := ctx.APIClient.ValidateASN(cmdCtx, asn)
 			if err != nil {
 				return fmt.Errorf("validation failed: %w", err)
 			}

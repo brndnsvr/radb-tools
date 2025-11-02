@@ -3,8 +3,8 @@
 # Binary name
 BINARY=radb-client
 
-# Build directory
-BUILD_DIR=dist
+# Build directory (empty = repo root)
+BUILD_DIR=.
 
 # Go parameters
 GOCMD=go
@@ -37,7 +37,7 @@ test-coverage: ## Run tests with coverage report
 	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
 
 clean: ## Clean build artifacts
-	rm -rf $(BUILD_DIR)
+	rm -f $(BINARY)
 	rm -f coverage.txt coverage.html
 
 install: ## Install the binary

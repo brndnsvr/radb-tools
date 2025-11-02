@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bss/radb-client/internal/api"
-	"github.com/bss/radb-client/internal/config"
 	"github.com/bss/radb-client/internal/models"
 	"github.com/bss/radb-client/internal/state"
 	"github.com/sirupsen/logrus"
@@ -49,26 +47,7 @@ func newRouteListCmd(logger *logrus.Logger) *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List all routes",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
-
-			// Load config
-			cfg, err := config.Load()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-
-			// Create API client
-			client := api.NewHTTPClient(cfg.API.BaseURL, cfg.API.Source, cfg.API.Timeout, logger)
-
-			// Load credentials and authenticate
-			creds, err := config.LoadCredentials()
-			if err != nil {
-				return fmt.Errorf("not authenticated: please run 'radb-client auth login' first")
-			}
-
-			if err := client.Login(ctx, creds.Username, creds.Password); err != nil {
-				return fmt.Errorf("authentication failed: %w", err)
-			}
+			cmdCtx := context.Background()
 
 			// Build filters
 			filters := make(map[string]string)
@@ -82,15 +61,15 @@ func newRouteListCmd(logger *logrus.Logger) *cobra.Command {
 				filters["mnt-by"] = mntBy
 			}
 
-			// List routes
-			routes, err := client.ListRoutes(ctx, filters)
+			// List routes using shared API client (already authenticated)
+			routes, err := ctx.APIClient.ListRoutes(cmdCtx, filters)
 			if err != nil {
 				return fmt.Errorf("failed to list routes: %w", err)
 			}
 
 			// Auto-snapshot if enabled
 			if autoSnapshot {
-				stateManager, _ := state.NewFileManager(cfg.StateDir(), logger)
+				stateManager, _ := state.NewFileManager(ctx.Config.StateDir(), logger)
 				defer stateManager.Close()
 
 				snapshot := models.NewSnapshot(models.SnapshotTypeRoute, "Auto-snapshot from route list")
@@ -99,7 +78,7 @@ func newRouteListCmd(logger *logrus.Logger) *cobra.Command {
 					logger.Warnf("Failed to compute snapshot checksum: %v", err)
 				}
 
-				if err := stateManager.SaveSnapshot(ctx, snapshot); err != nil {
+				if err := stateManager.SaveSnapshot(cmdCtx, snapshot); err != nil {
 					logger.Warnf("Failed to save auto-snapshot: %v", err)
 				} else {
 					logger.Infof("Created snapshot: %s", snapshot.ID)
@@ -130,31 +109,12 @@ func newRouteShowCmd(logger *logrus.Logger) *cobra.Command {
 		Short: "Show a specific route",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			cmdCtx := context.Background()
 			prefix := args[0]
 			asn := args[1]
 
-			// Load config
-			cfg, err := config.Load()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-
-			// Create API client
-			client := api.NewHTTPClient(cfg.API.BaseURL, cfg.API.Source, cfg.API.Timeout, logger)
-
-			// Authenticate
-			creds, err := config.LoadCredentials()
-			if err != nil {
-				return fmt.Errorf("not authenticated: please run 'radb-client auth login' first")
-			}
-
-			if err := client.Login(ctx, creds.Username, creds.Password); err != nil {
-				return fmt.Errorf("authentication failed: %w", err)
-			}
-
-			// Get route
-			route, err := client.GetRoute(ctx, prefix, asn)
+			// Get route using shared API client (already authenticated)
+			route, err := ctx.APIClient.GetRoute(cmdCtx, prefix, asn)
 			if err != nil {
 				return fmt.Errorf("failed to get route: %w", err)
 			}
@@ -201,19 +161,13 @@ func newRouteCreateCmd(logger *logrus.Logger) *cobra.Command {
 		Short: "Create a new route",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			cmdCtx := context.Background()
 			prefix := args[0]
 			asn := args[1]
 
 			// Ensure ASN has AS prefix
 			if !strings.HasPrefix(asn, "AS") {
 				asn = "AS" + asn
-			}
-
-			// Load config
-			cfg, err := config.Load()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
 			}
 
 			// Create route object
@@ -223,7 +177,7 @@ func newRouteCreateCmd(logger *logrus.Logger) *cobra.Command {
 				Descr:   descr,
 				MntBy:   mntBy,
 				Remarks: remarks,
-				Source:  cfg.API.Source,
+				Source:  ctx.Config.API.Source,
 			}
 
 			// Validate
@@ -231,21 +185,8 @@ func newRouteCreateCmd(logger *logrus.Logger) *cobra.Command {
 				return fmt.Errorf("route validation failed: %w", err)
 			}
 
-			// Create API client
-			client := api.NewHTTPClient(cfg.API.BaseURL, cfg.API.Source, cfg.API.Timeout, logger)
-
-			// Authenticate
-			creds, err := config.LoadCredentials()
-			if err != nil {
-				return fmt.Errorf("not authenticated: please run 'radb-client auth login' first")
-			}
-
-			if err := client.Login(ctx, creds.Username, creds.Password); err != nil {
-				return fmt.Errorf("authentication failed: %w", err)
-			}
-
-			// Create route
-			if err := client.CreateRoute(ctx, route); err != nil {
+			// Create route using shared API client (already authenticated)
+			if err := ctx.APIClient.CreateRoute(cmdCtx, route); err != nil {
 				return fmt.Errorf("failed to create route: %w", err)
 			}
 
@@ -275,7 +216,7 @@ func newRouteUpdateCmd(logger *logrus.Logger) *cobra.Command {
 		Short: "Update an existing route",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			cmdCtx := context.Background()
 			prefix := args[0]
 			asn := args[1]
 
@@ -284,27 +225,8 @@ func newRouteUpdateCmd(logger *logrus.Logger) *cobra.Command {
 				asn = "AS" + asn
 			}
 
-			// Load config
-			cfg, err := config.Load()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-
-			// Create API client
-			client := api.NewHTTPClient(cfg.API.BaseURL, cfg.API.Source, cfg.API.Timeout, logger)
-
-			// Authenticate
-			creds, err := config.LoadCredentials()
-			if err != nil {
-				return fmt.Errorf("not authenticated: please run 'radb-client auth login' first")
-			}
-
-			if err := client.Login(ctx, creds.Username, creds.Password); err != nil {
-				return fmt.Errorf("authentication failed: %w", err)
-			}
-
-			// Get existing route
-			route, err := client.GetRoute(ctx, prefix, asn)
+			// Get existing route using shared API client (already authenticated)
+			route, err := ctx.APIClient.GetRoute(cmdCtx, prefix, asn)
 			if err != nil {
 				return fmt.Errorf("failed to get route: %w", err)
 			}
@@ -320,8 +242,8 @@ func newRouteUpdateCmd(logger *logrus.Logger) *cobra.Command {
 				route.Remarks = remarks
 			}
 
-			// Update route
-			if err := client.UpdateRoute(ctx, route); err != nil {
+			// Update route using shared API client
+			if err := ctx.APIClient.UpdateRoute(cmdCtx, route); err != nil {
 				return fmt.Errorf("failed to update route: %w", err)
 			}
 
@@ -346,7 +268,7 @@ func newRouteDeleteCmd(logger *logrus.Logger) *cobra.Command {
 		Short: "Delete a route",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			cmdCtx := context.Background()
 			prefix := args[0]
 			asn := args[1]
 
@@ -354,27 +276,8 @@ func newRouteDeleteCmd(logger *logrus.Logger) *cobra.Command {
 				return fmt.Errorf("please confirm deletion with --confirm flag")
 			}
 
-			// Load config
-			cfg, err := config.Load()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-
-			// Create API client
-			client := api.NewHTTPClient(cfg.API.BaseURL, cfg.API.Source, cfg.API.Timeout, logger)
-
-			// Authenticate
-			creds, err := config.LoadCredentials()
-			if err != nil {
-				return fmt.Errorf("not authenticated: please run 'radb-client auth login' first")
-			}
-
-			if err := client.Login(ctx, creds.Username, creds.Password); err != nil {
-				return fmt.Errorf("authentication failed: %w", err)
-			}
-
-			// Delete route
-			if err := client.DeleteRoute(ctx, prefix, asn); err != nil {
+			// Delete route using shared API client (already authenticated)
+			if err := ctx.APIClient.DeleteRoute(cmdCtx, prefix, asn); err != nil {
 				return fmt.Errorf("failed to delete route: %w", err)
 			}
 
@@ -396,33 +299,27 @@ func newRouteDiffCmd(logger *logrus.Logger) *cobra.Command {
 		Short: "Compare two route snapshots",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			cmdCtx := context.Background()
 			snapshot1ID := args[0]
 			snapshot2ID := args[1]
 
-			// Load config
-			cfg, err := config.Load()
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-
-			// Create state manager
-			stateManager, _ := state.NewFileManager(cfg.StateDir(), logger)
+			// Create state manager using shared config
+			stateManager, _ := state.NewFileManager(ctx.Config.StateDir(), logger)
 			defer stateManager.Close()
 
 			// Load snapshots
-			snap1, err := stateManager.LoadSnapshot(ctx, snapshot1ID)
+			snap1, err := stateManager.LoadSnapshot(cmdCtx, snapshot1ID)
 			if err != nil {
 				return fmt.Errorf("failed to load snapshot %s: %w", snapshot1ID, err)
 			}
 
-			snap2, err := stateManager.LoadSnapshot(ctx, snapshot2ID)
+			snap2, err := stateManager.LoadSnapshot(cmdCtx, snapshot2ID)
 			if err != nil {
 				return fmt.Errorf("failed to load snapshot %s: %w", snapshot2ID, err)
 			}
 
 			// Compute diff
-			diff, err := state.ComputeDiff(ctx, snap1, snap2)
+			diff, err := state.ComputeDiff(cmdCtx, snap1, snap2)
 			if err != nil {
 				return fmt.Errorf("failed to compute diff: %w", err)
 			}
