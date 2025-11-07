@@ -84,7 +84,7 @@ radb-client route diff
 
 🧪 **v0.9 Pre-Release** - Complete implementation pending final manual testing.
 
-See [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) for complete project details and [DESIGN.md](DESIGN.md) for architecture.
+See [PROJECT_SUMMARY.md](docs/design/PROJECT_SUMMARY.md) for complete project details and [DESIGN.md](docs/design/DESIGN.md) for architecture.
 
 ## Documentation
 
@@ -97,12 +97,12 @@ See [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) for complete project details and [D
 - [Installation Guide](INSTALL.md) - Platform-specific installation
 
 ### For Developers
-- [Project Summary](PROJECT_SUMMARY.md) - Complete project overview
-- [Design Document](DESIGN.md) - Architecture and design decisions
+- [Project Summary](docs/design/PROJECT_SUMMARY.md) - Complete project overview
+- [Design Document](docs/design/DESIGN.md) - Architecture and design decisions
 - [Development Guide](docs/DEVELOPMENT.md) - Contributing and development
 - [Architecture](docs/ARCHITECTURE.md) - Technical architecture details
 - [Security](docs/SECURITY.md) - Security implementation and best practices
-- [Go Implementation](GO_IMPLEMENTATION.md) - Go-specific patterns
+- [Go Implementation](docs/design/GO_IMPLEMENTATION.md) - Go-specific patterns
 
 ### API Documentation
 - [RADb API Integration](docs/API_INTEGRATION.md) - RADb API details

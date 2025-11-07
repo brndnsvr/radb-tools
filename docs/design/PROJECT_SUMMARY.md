@@ -329,18 +329,18 @@ radb-client/
 9. **SECURITY.md** - Security best practices
 
 ### Developer Documentation
-1. **DEVELOPMENT.md** - Development guide
+1. **docs/DEVELOPMENT.md** - Development guide
 2. **CONTRIBUTING.md** - Contribution guidelines
-3. **DESIGN.md** - Original design document
-4. **GO_IMPLEMENTATION.md** - Go-specific patterns
-5. **ROADMAP.md** - Implementation phases
+3. **docs/design/DESIGN.md** - Original design document
+4. **docs/design/GO_IMPLEMENTATION.md** - Go-specific patterns
+5. **docs/design/ROADMAP.md** - Implementation phases
 
 ### Operational Documentation
 1. **CHANGELOG.md** - Version history and roadmap
-2. **REVIEW_FINDINGS.md** - Architecture review results
-3. **PHASE1_IMPLEMENTATION.md** - Phase 1 details
-4. **PHASE2_IMPLEMENTATION.md** - Phase 2 details
-5. **PHASE3_SUMMARY.md** - Phase 3 summary
+2. **docs/design/REVIEW_FINDINGS.md** - Architecture review results
+3. **docs/implementation/PHASE1_IMPLEMENTATION.md** - Phase 1 details
+4. **docs/implementation/PHASE2_IMPLEMENTATION.md** - Phase 2 details
+5. **docs/implementation/PHASE3_SUMMARY.md** - Phase 3 summary
 
 ---
 

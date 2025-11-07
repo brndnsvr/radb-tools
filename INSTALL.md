@@ -416,7 +416,7 @@ go test ./internal/config/...
 Follow comprehensive testing procedures:
 
 ```bash
-cat TESTING_RUNBOOK.md
+cat docs/testing/TESTING_RUNBOOK.md
 ```
 
 ---
@@ -630,7 +630,7 @@ After successful installation:
 
 3. **Run Manual Tests**
    ```bash
-   cat TESTING_RUNBOOK.md
+   cat docs/testing/TESTING_RUNBOOK.md
    ```
 
 4. **Configure for Your Environment**
@@ -645,11 +645,11 @@ After successful installation:
 
 ## Additional Documentation
 
-- **Quick Start**: `QUICKSTART.md` - Get started quickly
-- **Testing Guide**: `TESTING_RUNBOOK.md` - Comprehensive testing procedures
-- **Daemon Deployment**: `docs/DAEMON_DEPLOYMENT.md` - Daemon setup and management
-- **Version Management**: `docs/VERSION_MANAGEMENT.md` - Version and release process
-- **Design Documents**: `DESIGN.md`, `GO_IMPLEMENTATION.md` - Architecture details
+- **Quick Start**: `docs/installation/QUICKSTART.md` - Get started quickly
+- **Testing Guide**: `docs/testing/TESTING_RUNBOOK.md` - Comprehensive testing procedures
+- **Daemon Deployment**: `docs/installation/DAEMON_DEPLOYMENT.md` - Daemon setup and management
+- **Version Management**: `docs/design/VERSION_MANAGEMENT.md` - Version and release process
+- **Design Documents**: `docs/design/DESIGN.md`, `docs/design/GO_IMPLEMENTATION.md` - Architecture details
 
 ---
 
